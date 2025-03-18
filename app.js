@@ -14,7 +14,7 @@ app.use(cors())
 // connect DB
 connectDB(DATABASE_URL)
 // json
-app.use(express.json)
+app.use(express.json())
 
 // load routes
 app.use("/api/user",router)

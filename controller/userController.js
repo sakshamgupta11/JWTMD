@@ -1,6 +1,8 @@
 import userModel from "../models/user.js";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import dotenv from 'dotenv'
+dotenv.config()
 
 
 class userConteroller {
@@ -22,15 +24,20 @@ class userConteroller {
                                 email: email,
                                 password: hashPassword,
                                 tc: tc
+        
                             })
-                            await doc.save()
+                           
                             const save_user = userModel.findOne({ email: email })
+                            const userSave =  await doc.save()
                             // generate JWT token
                             const token = jwt.sign({ userID: save_user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '5d' })
+                           
+                           await userModel.findByIdAndUpdate(userSave._id, { token });
                             res.status(201).json({ status: "success", message: "registrered successfully", "token": token })
+
                         } catch (error) {
                             console.log(error);
-                            res.status(400).json({ error: "error in interting data registraction" })
+                         return   res.status(400).json({ error: "error in interting data registraction" })
 
                         }
 
