@@ -5,6 +5,7 @@ const router = express.Router();
 
 //public route 
 router.post('/register',userConteroller.userRegistration)
+router.post('/login',userConteroller.userLogin)
 // private route
 
 
