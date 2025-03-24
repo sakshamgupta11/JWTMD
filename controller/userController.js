@@ -83,9 +83,15 @@ res.status(500).json({ status: "failed", message: "Internal server error" })
     
             // Generate a JWT token with user ID and set expiration time to 5 days
             const token = jwt.sign({ userID: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: '5d' });
-    
+            const updatedUser = await userModel.findOneAndUpdate(
+                { email: email }, 
+                { $set: { token: token } },
+                { new: true } 
+            );
+            
             // Send success response along with the generated token
             return res.status(200).json({ status: "success", message: "Login successful", token: token });
+           
     
         } catch (error) {
             // Log the error in the console for debugging
