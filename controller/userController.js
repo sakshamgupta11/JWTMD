@@ -121,6 +121,12 @@ class userConteroller {
             res.status(500).json({ error: "internal server error" })
         }
     }
+
+    static loggedUser = async(req,res)=>{
+        res.status(200).json({"user": req.user})
+    }
 }
+
+
 
 export default userConteroller
