@@ -2,7 +2,9 @@ import userModel from "../models/user.js";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import dotenv from 'dotenv'
+import transporter from "../config/emailConfic.js";
 import { error } from "console";
+import { status } from "init";
 dotenv.config()
 
 
@@ -122,8 +124,74 @@ class userConteroller {
         }
     }
 
-    static loggedUser = async(req,res)=>{
-        res.status(200).json({"user": req.user})
+    static loggedUser = async (req, res) => {
+        res.status(200).json({ "user": req.user })
+    }
+
+    static sendUserPasswordResetEmail = async (req, res) => {
+        const { email } = req.body
+        try {
+
+            if (!email) {
+                return res.status(400).json({ status: "failed", message: "email are required" });
+            }
+            const user = await userModel.findOne({ email: email })
+            if (!user) {
+                return res.status(400).json({ status: "failed", message: "email does not exist please register or enter correct email" })
+            }
+
+            const secret = user._id + process.env.JWT_SECRET_KEY
+            const token = jwt.sign({ userID: user._id }, secret, { expiresIn: "15m" })
+            // const link = `http://127.0.0.13000/api/user/reset/${user._id}/${token}`
+            const link = `http://127.0.0.1:3000/api/user/reset-password/${user._id}/${token}`
+
+            // send email
+
+            let info = await transporter.sendMail({
+                from:process.env.EMAIL_FROM,
+                to:user.email,
+                subject:"saksham PVT LMD - password -reset -link",
+                // html:`<a href=${link}> click here<a/> to Reset your password`
+                html: `<a href="${link}" target="_blank">Click here</a> to reset your password`
+
+
+            })
+
+            // console.log(link)
+            res.status(200).json({ message: "email sent please check your register  email","info":info })
+
+        } catch (error) {
+            console.error("Error in sending email:", error);
+            res.status(500).json({ status: "failed", message: "internal server error" })
+        }
+
+    }
+
+
+    static userPasswordReset = async (req, res) => {
+        const { password, password_confirmation } = req.body
+        const { id, token } = req.params
+        const user = await userModel.findById(id)
+        const new_secret = user._id + process.env.JWT_SECRET_KEY
+        try {
+            jwt.verify(token, new_secret)
+            if (!password || !password_confirmation) {
+                return res.status(400).json({ status: "failed", message: "all feilds are required" })
+            }
+            if (password !== password_confirmation) {
+                return res.status(400).json({ status: "faild", message: "password and confirm password does not match" })
+            }
+            const salt = await bcrypt.genSalt(10)
+            const newhashPassword = await bcrypt.hash(password, salt)
+            await userModel.findByIdAndUpdate(user._id, { $set: { password: newhashPassword } })
+
+            return res.status(200).json({status:"success",message:"password updated"})
+
+
+        } catch (error) {
+            return res.status(400).json({ message: "invalid token" })
+        }
+
     }
 }
 
